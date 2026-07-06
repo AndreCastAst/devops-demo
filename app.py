@@ -6,7 +6,7 @@ app = Flask(__name__)
 
 @app.route("/")
 def index():
-    return "DevOps Demo — el pipeline está vivo 🚀"
+    return "Página estática de André Castañeda"
 
 
 @app.route("/health")
