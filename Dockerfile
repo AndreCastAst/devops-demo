@@ -10,4 +10,4 @@ COPY . .
 ENV PORT=5000
 EXPOSE $PORT
 
-CMD ["python", "app.py"]
+CMD gunicorn --bind 0.0.0.0:$PORT app:app
