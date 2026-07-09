@@ -1,71 +1,60 @@
-name: Pipeline DevOps End-to-End
+name: Pipeline DevOps Completo
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["**"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
   # -----------------------------------------------------------
-  # FASE 1: CODE, BUILD (Dependencias) & TEST
+  # FASE 1: TEST (Validación de Calidad de Código)
   # -----------------------------------------------------------
-  Integracion-Continua:
+  Fase-Test:
     runs-on: ubuntu-latest
     steps:
-      - name: 1. Descargar Código Fuente (Fase: Code)
+      - name: Checkout código
         uses: actions/checkout@v4
 
-      - name: 2. Configurar Entorno Python (Fase: Build - Preparación)
+      - name: Instalar Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.12"
 
-      - name: 3. Instalar Dependencias de la App
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
 
-      - name: 4. Ejecutar Pruebas Unitarias (Fase: Test)
-        run: |
-          pytest test_app.py
+      - name: Correr tests (pytest)
+        run: pytest -v
 
   # -----------------------------------------------------------
-  # FASE 2: BUILD (Artefacto Docker) & RELEASE (Verificación)
+  # FASE 2: BUILD (Construcción del Artefacto Docker)
   # -----------------------------------------------------------
-  Empaquetado-Docker:
-    needs: Integracion-Continua # No inicia si los tests fallan
+  Fase-Build:
+    needs: Fase-Test # Espera a que los tests pasen
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     steps:
-      - name: 1. Descargar Código Fuente
+      - name: Checkout código
         uses: actions/checkout@v4
 
-      - name: 2. Configurar Entorno Docker
-        uses: docker/setup-buildx-action@v3
-
-      - name: 3. Construir Imagen del Contenedor (Fase: Build / Release)
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: false # Se simula la creación del artefacto sin subirlo a un registro público aún
-          tags: mi-app-devops:latest
+      - name: Build imagen Docker
+        run: docker build -t devops-demo .
 
   # -----------------------------------------------------------
-  # FASE 3: DEPLOY (Despliegue Continuo)
+  # FASE 3: DEPLOY (Despliegue Continuo a Producción)
   # -----------------------------------------------------------
-  Despliegue-Produccion:
-    needs: Empaquetado-Docker # Requiere que el contenedor se construya con éxito
+  Fase-Deploy:
+    needs: Fase-Build # Espera a que el Build de Docker termine con éxito
     runs-on: ubuntu-latest
+    # Solo despliega si los cambios se hacen en la rama 'main' (Producción)
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     steps:
-      - name: Trigger de Despliegue Automático (Fase: Deploy)
+      - name: Ejecutar Despliegue Automático
         run: |
-          echo "Notificando a la plataforma de hosting (Render / Railway)..."
-          echo "El código ha pasado todas las fases previas de forma automatizada."
-          echo "¡Despliegue en producción completado con éxito!"
+          echo "Iniciando la fase de Despliegue..."
+          echo "Notificando a la plataforma de hosting que el contenedor está listo."
+          echo "¡La aplicación está en vivo en el entorno de producción!"
           
-          # NOTA OPCIONAL PARA NOTIFICAR A RENDER DE FORMA REAL:
-          # Si usas Render, ellos te dan un "Deploy Hook URL". 
-          # Descomentando la línea de abajo, GitHub le avisará a Render que se actualice:
+          # NOTA: Cuando crees tu cuenta en Render, descomentarás la línea de abajo
+          # y guardarás la URL en los Secrets de GitHub para que el deploy sea 100% real:
           # curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
