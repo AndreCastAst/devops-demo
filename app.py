@@ -6,12 +6,12 @@ app = Flask(__name__)
 
 @app.route("/")
 def index():
-    return "Página estática de André Castañeda Astudillo ---> "
+    return "Página estática de André Castañeda"
 
 
 @app.route("/health")
 def health():
- return jsonify({"status": "broken"}), 500
+ return jsonify({"status": "ok"}), 200
 
 
 if __name__ == "__main__":
